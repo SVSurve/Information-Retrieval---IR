@@ -1,0 +1,690 @@
+
+Practical No : 1
+Write a program to demonstrate bitwise operation. 
+
+a = 60             
+b = 13            
+c = 0
+
+c = a & b;        
+print ("Line 1 - Value of c is ", c)
+
+c = a | b;         
+print ("Line 2 - Value of c is ", c)
+
+c = a ^ b;        
+print ("Line 3 - Value of c is ", c)
+
+c = ~a;           
+print ("Line 4 - Value of c is ", c)
+
+c = a << 2;       
+print ("Line 5 - Value of c is ", c)
+
+c = a >> 2;       
+print ("Line 6 - Value of c is ", c)
+
+Output :-
+
+
+
+
+
+Practical No :- 2
+Implement Page Rank Algorithm.
+
+import numpy as np
+from scipy.sparse import csc_matrix
+def pageRank(G,s= .85, maxerr =.0001):
+    n=G.shape[0]
+    A =csc_matrix(G,dtype=np.float)
+    rsums = np.array(A.sum(1))[:,0]
+    ri, ci = A.nonzero()
+    A.data /= rsums[ri]
+    sink =rsums==0
+    ro, r = np.zeros(n), np.ones(n)
+    while np.sum(np.abs(r-ro)) > maxerr:
+        ro = r.copy()
+        for i in range(0,n):
+            Ai=np.array(A[:,i].todense())[:,0]
+            Di=sink/float(n)
+            Ei=np.ones(n)/float(n)
+            r[i] = ro.dot(Ai*s + Di*s +Ei*(1-s))
+        return r/float(sum(r))
+
+if __name__=='__main__':
+    G=np.array([[0,0,1,0,0,0,0],
+                [0,1,1,0,0,0,0],
+                [1,0,1,1,0,0,0],
+                [0,0,0,1,1,0,0],
+                [0,0,0,0,0,0,1],
+                [0,0,0,0,0,1,1],
+                [0,0,0,1,1,0,1],])
+    print(pageRank(G,s=.86))
+    
+
+
+
+Output :-
+
+
+
+Practical No :- 3
+Implement Dynamic programming algorithm for computing the edit distance between strings s1 and s2. (Hint. Levenshtein Distance)
+
+import numpy as np
+def levenshtein(s1,s2):
+    sizex=len(s1)+1
+    sizey=len(s2)+1
+    matrix=np.zeros((sizex,sizey))
+    for x in range(sizex):
+        matrix[x,0]=x
+    for y in range(sizey):
+        matrix[0,y]=y
+
+    for x in range(1,sizex):
+        for y in range(1,sizey):
+            if s1[x-1]==s2[y-1]:
+                matrix[x,y]=min(matrix[x-1,y-1]+1,matrix[x,y-1]+1)
+            else:
+                matrix[x,y]=min(matrix[x-1,y]+1,matrix[x,y-1]+1)
+    print(matrix)
+    return (matrix[sizex-1,sizey-1])
+
+levenshtein("hello","hello")
+
+
+
+Output :-
+
+
+
+Practical No :- 4
+Write a program to Compute Similarity between two text documents.
+
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+import numpy as np
+import nltk
+
+def process(file):
+    raw=open(file).read()
+    tokens=word_tokenize(raw)
+    words=[w.lower() for w in tokens]
+    porter =nltk.PorterStemmer()
+    stemmed_tokens=[porter.stem(t) for t in words]
+    stop_words=set(stopwords.words('english'))
+    filtered_tokens=[w for w in stemmed_tokens if not w in stop_words]
+    count=nltk.defaultdict(int)
+    for word in filtered_tokens:
+        count[word]+=1
+
+    return count;
+
+
+def cos_sim(a,b):
+    dot_product=np.dot(a,b)
+    norm_a=np.linalg.norm(a)
+    norm_b=np.linalg.norm(b)
+    return dot_product/(norm_a* norm_b)
+
+def getSimilarity(dict1, dict2):
+    all_words_list=[]
+    for key in dict1:
+        all_words_list.append(key)
+    for key in dict2:
+        all_words_list.append(key)
+    all_words_list_size=len(all_words_list)
+    v1=np.zeros(all_words_list_size, dtype=np.int)
+    v2=np.zeros(all_words_list_size, dtype=np.int)
+    i=0
+    for (key) in all_words_list:
+        v1[i]=dict1.get(key,0)
+        v2[i]=dict2.get(key,0)
+        i=i+1
+    return cos_sim(v1,v2)
+
+if __name__=='__main__':
+    dict1=process("t1")
+    dict2=process("t2")
+    print("Similarity between 2 text document",getSimilarity(dict1,dict2))
+
+
+
+Output :-
+
+
+
+Practical No :- 6
+Implement a basic IR system using Lucene.
+
+LuceneConstants.java
+
+package com.tutorialspoint.lucene;
+
+public class LuceneConstants {
+   public static final String CONTENTS = "contents";
+   public static final String FILE_NAME = "filename";
+   public static final String FILE_PATH = "filepath";
+   public static final int MAX_SEARCH = 10;
+}
+TextFileFilter.java
+This class is used as a .txt file filter.
+
+package com.tutorialspoint.lucene;
+
+import java.io.File;
+import java.io.FileFilter;
+
+public class TextFileFilter implements FileFilter {
+
+   @Override
+   public boolean accept(File pathname) {
+      return pathname.getName().toLowerCase().endsWith(".txt");
+   }
+}
+
+Indexer.java
+
+package com.tutorialspoint.lucene;
+
+import java.io.File;
+import java.io.FileFilter;
+import java.io.FileReader;
+import java.io.IOException;
+
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.Version;
+
+public class Indexer {
+
+   private IndexWriter writer;
+
+   public Indexer(String indexDirectoryPath) throws IOException {
+      //this directory will contain the indexes
+      Directory indexDirectory = 
+         FSDirectory.open(new File(indexDirectoryPath));
+
+      //create the indexer
+      writer = new IndexWriter(indexDirectory, 
+         new StandardAnalyzer(Version.LUCENE_36),true, 
+         IndexWriter.MaxFieldLength.UNLIMITED);
+   }
+
+   public void close() throws CorruptIndexException, IOException {
+      writer.close();
+   }
+
+   private Document getDocument(File file) throws IOException {
+      Document document = new Document();
+
+      //index file contents
+      Field contentField = new Field(LuceneConstants.CONTENTS, new FileReader(file));
+      //index file name
+      Field fileNameField = new Field(LuceneConstants.FILE_NAME,
+         file.getName(),Field.Store.YES,Field.Index.NOT_ANALYZED);
+      //index file path
+      Field filePathField = new Field(LuceneConstants.FILE_PATH,
+         file.getCanonicalPath(),Field.Store.YES,Field.Index.NOT_ANALYZED);
+
+      document.add(contentField);
+      document.add(fileNameField);
+      document.add(filePathField);
+
+      return document;
+   }   
+
+   private void indexFile(File file) throws IOException {
+      System.out.println("Indexing "+file.getCanonicalPath());
+      Document document = getDocument(file);
+      writer.addDocument(document);
+   }
+
+   public int createIndex(String dataDirPath, FileFilter filter) 
+      throws IOException {
+      //get all files in the data directory
+      File[] files = new File(dataDirPath).listFiles();
+
+      for (File file : files) {
+         if(!file.isDirectory()
+            && !file.isHidden()
+            && file.exists()
+            && file.canRead()
+            && filter.accept(file)
+         ){
+            indexFile(file);
+         }
+      }
+      return writer.numDocs();
+   }
+}
+
+Searcher.java
+
+package com.tutorialspoint.lucene;
+
+import java.io.File;
+import java.io.IOException;
+
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.queryParser.ParseException;
+import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.Version;
+
+public class Searcher {
+	
+   IndexSearcher indexSearcher;
+   QueryParser queryParser;
+   Query query;
+   
+   public Searcher(String indexDirectoryPath) 
+      throws IOException {
+      Directory indexDirectory = 
+         FSDirectory.open(new File(indexDirectoryPath));
+      indexSearcher = new IndexSearcher(indexDirectory);
+      queryParser = new QueryParser(Version.LUCENE_36,
+         LuceneConstants.CONTENTS,
+         new StandardAnalyzer(Version.LUCENE_36));
+   }
+   
+   public TopDocs search( String searchQuery) 
+      throws IOException, ParseException {
+      query = queryParser.parse(searchQuery);
+      return indexSearcher.search(query, LuceneConstants.MAX_SEARCH);
+   }
+
+   public Document getDocument(ScoreDoc scoreDoc) 
+      throws CorruptIndexException, IOException {
+      return indexSearcher.doc(scoreDoc.doc);	
+   }
+
+   public void close() throws IOException {
+      indexSearcher.close();
+   }
+}
+
+LuceneTester.java
+
+package com.tutorialspoint.lucene;
+
+import java.io.IOException;
+
+import org.apache.lucene.document.Document;
+import org.apache.lucene.queryParser.ParseException;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TopDocs;
+
+public class LuceneTester {
+	
+   String indexDir = "E:\\Lucene\\Index";
+   String dataDir = "E:\\Lucene\\Data";
+   Indexer indexer;
+   Searcher searcher;
+
+   public static void main(String[] args) {
+      LuceneTester tester;
+      try {
+         tester = new LuceneTester();
+         tester.createIndex();
+         tester.search("Mohan");
+      } catch (IOException e) {
+         e.printStackTrace();
+      } catch (ParseException e) {
+         e.printStackTrace();
+      }
+   }
+
+   private void createIndex() throws IOException {
+      indexer = new Indexer(indexDir);
+      int numIndexed;
+      long startTime = System.currentTimeMillis();	
+      numIndexed = indexer.createIndex(dataDir, new TextFileFilter());
+      long endTime = System.currentTimeMillis();
+      indexer.close();
+      System.out.println(numIndexed+" File indexed, time taken: "
+         +(endTime-startTime)+" ms");		
+   }
+
+   private void search(String searchQuery) throws IOException, ParseException {
+      searcher = new Searcher(indexDir);
+      long startTime = System.currentTimeMillis();
+      TopDocs hits = searcher.search(searchQuery);
+      long endTime = System.currentTimeMillis();
+   
+      System.out.println(hits.totalHits +
+         " documents found. Time :" + (endTime - startTime));
+      for(ScoreDoc scoreDoc : hits.scoreDocs) {
+         Document doc = searcher.getDocument(scoreDoc);
+            System.out.println("File: "
+            + doc.get(LuceneConstants.FILE_PATH));
+      }
+      searcher.close();
+   }
+}
+
+Output :-
+
+
+
+
+
+Practical No :- 7
+Write a program for Pre-processing of a Text Document: stop word removal.
+
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+example_sent="this is a sample sentence,showing off the stopwords filteration."
+stop_words=set(stopwords.words('english'))
+word_tokens=word_tokenize(example_sent)
+filtered_sentence=[w for w in word_tokens if not w in stop_words]
+filtered_sentence=[]
+for w in word_tokens:
+    if w not in stop_words:
+        filtered_sentence.append(w)
+print(word_tokens)
+print(filtered_sentence)
+
+
+
+Output :-
+
+
+
+Practical No :- 8
+Write a program for mining Twitter to identify tweets for a specific period and identify trends and named entities.
+
+import tweepy
+from tkinter import *
+from time import sleep
+from datetime import datetime
+from textblob import TextBlob
+import matplotlib.pyplot as plt
+
+#Authentication
+consumer_key = 'D9w1OGo2fMY5zhnLX3sBMqBOg'
+consumer_secret = 'jgSxjsRPRuxTijVzx13PA0D6W06lOpAOA15zSpETVuMCe7qCcu'
+access_token = '3226827390-kHjFHV7xbQpZ2E2ec8oAuOdVjFwD44Goq33JiGl'
+access_token_secret = 'Qtfpcx9ofVOxJBjR7AJ8vyuE1UaVTEaBCQrM71JbxSjxj'
+
+auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+auth.set_access_token(access_token, access_token_secret)
+api = tweepy.API(auth)
+
+#GUI
+root = Tk()
+
+label1 = Label(root, text="Search")
+E1 = Entry(root, bd =5)
+
+label2 = Label(root, text="Sample Size")
+E2 = Entry(root, bd =5)
+
+def getE1():
+    return E1.get()
+
+def getE2():
+    return E2.get()
+
+def getData():
+    getE1()
+    keyword = getE1()
+
+    getE2()
+    numberOfTweets = getE2()
+    numberOfTweets = int(numberOfTweets)
+
+    #Where the tweets are stored to be plotted
+    polarity_list = []
+    numbers_list = []
+    number = 1
+
+    for tweet in tweepy.Cursor(api.search, keyword, lang="en").items(numberOfTweets):
+        try:
+            analysis = TextBlob(tweet.text)
+            analysis = analysis.sentiment
+            polarity = analysis.polarity
+            polarity_list.append(polarity)
+            numbers_list.append(number)
+            number = number + 1
+
+        except tweepy.TweepError as e:
+            print(e.reason)
+
+        except StopIteration:
+            break
+
+    #Plotting
+    axes = plt.gca()
+    axes.set_ylim([-1, 2])
+
+    plt.scatter(numbers_list, polarity_list)
+
+    averagePolarity = (sum(polarity_list))/(len(polarity_list))
+    averagePolarity = "{0:.0f}%".format(averagePolarity * 100)
+    time  = datetime.now().strftime("At: %H:%M\nOn: %m-%d-%y")
+
+    plt.text(0, 1.25, "Average Sentiment:  " + str(averagePolarity) + "\n" + time, fontsize=12, bbox = dict(facecolor='none', edgecolor='black', boxstyle='square, pad = 1'))
+
+    plt.title("Sentiment of " + keyword + " on Twitter")
+    plt.xlabel("Number of Tweets")
+    plt.ylabel("Sentiment")
+    plt.show()
+
+submit = Button(root, text ="Submit", command = getData)
+
+label1.pack()
+E1.pack()
+label2.pack()
+E2.pack()
+submit.pack(side =BOTTOM)
+
+root.mainloop()
+
+
+
+Output :-
+
+
+
+Practical No :- 9
+Write a program to implement simple web crawler.
+
+from html.parser import HTMLParser  
+from urllib.request import urlopen  
+from urllib import parse
+
+# We are going to create a class called LinkParser that inherits some
+# methods from HTMLParser which is why it is passed into the definition
+class LinkParser(HTMLParser):
+
+    # This is a function that HTMLParser normally has
+    # but we are adding some functionality to it
+    def handle_starttag(self, tag, attrs):
+        # We are looking for the begining of a link. Links normally look
+        # like <a href="www.someurl.com"></a>
+        if tag == 'a':
+            for (key, value) in attrs:
+                if key == 'href':
+                    # We are grabbing the new URL. We are also adding the
+                    # base URL to it. For example:
+                    # www.netinstructions.com is the base and
+                    # somepage.html is the new URL (a relative URL)
+                    #
+                    # We combine a relative URL with the base URL to create
+                    # an absolute URL like:
+                    # www.netinstructions.com/somepage.html
+                    newUrl = parse.urljoin(self.baseUrl, value)
+                    # And add it to our colection of links:
+                    self.links = self.links + [newUrl]
+
+    # This is a new function that we are creating to get links
+    # that our spider() function will call
+    def getLinks(self, url):
+        self.links = []
+        # Remember the base URL which will be important when creating
+        # absolute URLs
+        self.baseUrl = url
+        # Use the urlopen function from the standard Python 3 library
+        response = urlopen(url)
+        # Make sure that we are looking at HTML and not other things that
+        # are floating around on the internet (such as
+        # JavaScript files, CSS, or .PDFs for example)
+        if response.getheader('Content-Type')=='text/html':
+            htmlBytes = response.read()
+            # Note that feed() handles Strings well, but not bytes
+            # (A change from Python 2.x to Python 3.x)
+            htmlString = htmlBytes.decode("utf-8")
+            self.feed(htmlString)
+            return htmlString, self.links
+        else:
+            return "",[]
+
+# And finally here is our spider. It takes in an URL, a word to find,
+# and the number of pages to search through before giving up
+def spider(url, word, maxPages):  
+    pagesToVisit = [url]
+    numberVisited = 0
+    foundWord = False
+    # The main loop. Create a LinkParser and get all the links on the page.
+    # Also search the page for the word or string
+    # In our getLinks function we return the web page
+    # (this is useful for searching for the word)
+    # and we return a set of links from that web page
+    # (this is useful for where to go next)
+    while numberVisited < maxPages and pagesToVisit != [] and not foundWord:
+        numberVisited = numberVisited +1
+        # Start from the beginning of our collection of pages to visit:
+        url = pagesToVisit[0]
+        pagesToVisit = pagesToVisit[1:]
+        try:
+            print(numberVisited, "Visiting:", url)
+            parser = LinkParser()
+            data, links = parser.getLinks(url)
+            if data.find(word)>-1:
+                foundWord = True
+                # Add the pages that we visited to the end of our collection
+                # of pages to visit:
+                pagesToVisit = pagesToVisit + links
+                print(" **Success!**")
+        except:
+            print(" **Failed!**")
+    if foundWord:
+        print("The word", word, "was found at", url)
+    else:
+        print("Word never found")
+#spider("https://www.dreamhost.com","Hi",10)
+
+
+
+Output:-
+
+
+
+Practical No :- 10
+Write a program to parse XML text, generate Web graph and compute topic specific page rank. 
+
+#Python code to illustrate parsing of XML files 
+# importing the required modules 
+import csv 
+import requests 
+import xml.etree.ElementTree as ET 
+
+def loadRSS(): 
+
+	# url of rss feed 
+	url = 'http://www.hindustantimes.com/rss/topnews/rssfeed.xml'
+
+	# creating HTTP response object from given url 
+	resp = requests.get(url) 
+
+	# saving the xml file 
+	with open('topnewsfeed.xml', 'wb') as f: 
+		f.write(resp.content) 
+		
+
+def parseXML(xmlfile): 
+
+	# create element tree object 
+	tree = ET.parse(xmlfile) 
+
+	# get root element 
+	root = tree.getroot() 
+
+	# create empty list for news items 
+	newsitems = [] 
+
+	# iterate news items 
+	for item in root.findall('./channel/item'): 
+
+		# empty news dictionary 
+		news = {} 
+
+		# iterate child elements of item 
+		for child in item: 
+
+			# special checking for namespace object content:media 
+			if child.tag == '{http://search.yahoo.com/mrss/}content': 
+				news['media'] = child.attrib['url'] 
+			elif child.text is not None:
+                                
+				news[child.tag] = child.text.encode('utf8') 
+
+		# append news dictionary to news items list 
+		newsitems.append(news) 
+	
+	# return news items list 
+	return newsitems 
+
+
+def savetoCSV(newsitems, filename): 
+
+	# specifying the fields for csv file 
+	fields = ['guid', 'title', 'pubDate', 'description', 'link', 'media'] 
+
+	# writing to csv file 
+	with open(filename, 'w') as csvfile: 
+
+		# creating a csv dict writer object 
+		writer = csv.DictWriter(csvfile, fieldnames = fields) 
+
+		# writing headers (field names) 
+		writer.writeheader() 
+
+		# writing data rows 
+		writer.writerows(newsitems) 
+
+	
+def main(): 
+	# load rss from web to update existing xml file 
+	loadRSS() 
+
+	# parse xml file 
+	newsitems = parseXML('topnewsfeed.xml') 
+
+	# store news items in a csv file 
+	savetoCSV(newsitems, 'topnews.csv') 
+	
+	
+if __name__ == "__main__": 
+
+	# calling main function 
+	main() 
+
+
+Output :-
+
+
